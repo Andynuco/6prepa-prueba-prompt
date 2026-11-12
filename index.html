@@ -1,0 +1,341 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis gastos diarios</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Animate.css -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+<style>
+body {
+    background: linear-gradient(135deg, #f3eaff, #ffe5f0);
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    padding: 30px 15px;
+}
+
+.container-box {
+    max-width: 700px;
+    margin: auto;
+    background: white;
+    padding: 30px;
+    border-radius: 25px;
+    box-shadow: 0 10px 30px rgba(100, 60, 150, 0.15);
+}
+
+.header {
+    background: linear-gradient(120deg, #8055e8, #ef70ad);
+    color: white;
+    padding: 25px;
+    border-radius: 20px;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.header h1 {
+    font-weight: bold;
+}
+
+.form-control {
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.btn-add {
+    background: #8055e8;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-weight: bold;
+    transition: .3s;
+}
+
+.btn-add:hover {
+    background: #623bc9;
+    color: white;
+    transform: scale(1.02);
+}
+
+.gasto {
+    background: #f8f5ff;
+    border: 1px solid #e5dcff;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.concepto {
+    font-weight: bold;
+    color: #49328a;
+    text-transform: capitalize;
+}
+
+.monto {
+    font-weight: bold;
+    color: #e34f91;
+}
+
+.btn-delete {
+    background: #ff6b81;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.btn-delete:hover {
+    background: #e44461;
+}
+
+.total {
+    background: linear-gradient(120deg, #ff6b9a, #ff9478);
+    color: white;
+    padding: 22px;
+    border-radius: 18px;
+    text-align: center;
+    margin-top: 25px;
+}
+
+.total h2 {
+    font-weight: bold;
+    font-size: 30px;
+}
+
+.empty {
+    text-align: center;
+    color: #888;
+    padding: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container-box animate__animated animate__fadeIn">
+
+    <div class="header">
+        <h1>💸 Mis gastos diarios</h1>
+        <p class="mb-0">¡Organiza tu dinero de manera fácil y divertida!</p>
+    </div>
+
+    <h4 class="mb-3">➕ Agregar un gasto</h4>
+
+    <form id="formulario">
+
+        <div class="mb-3">
+            <label class="form-label">Concepto del gasto</label>
+            <input
+                type="text"
+                id="concepto"
+                class="form-control"
+                placeholder="Ej. comida, transporte..."
+                maxlength="60"
+                required
+            >
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Monto ($)</label>
+            <input
+                type="number"
+                id="monto"
+                class="form-control"
+                placeholder="Ej. 150"
+                min="0.01"
+                step="0.01"
+                required
+            >
+        </div>
+
+        <button type="submit" class="btn btn-add w-100">
+            Agregar gasto +
+        </button>
+
+        <div id="error" class="text-danger mt-2"></div>
+
+    </form>
+
+    <hr class="my-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">🧾 Lista de gastos</h4>
+        <span class="badge bg-primary" id="contador">0 gastos</span>
+    </div>
+
+    <div id="lista-gastos">
+
+        <div class="empty" id="mensaje-vacio">
+            🛍️ Todavía no tienes gastos registrados.
+        </div>
+
+    </div>
+
+    <div class="total animate__animated" id="tarjeta-total">
+        <p class="mb-1">💰 TOTAL GASTADO</p>
+        <h2 id="total">$0.00</h2>
+        <small>Tu total se actualiza automáticamente</small>
+    </div>
+
+</div>
+
+<script>
+
+let gastos = [];
+
+const formulario = document.getElementById("formulario");
+const conceptoInput = document.getElementById("concepto");
+const montoInput = document.getElementById("monto");
+const lista = document.getElementById("lista-gastos");
+const total = document.getElementById("total");
+const contador = document.getElementById("contador");
+const error = document.getElementById("error");
+
+const formatoDinero = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN"
+});
+
+// Agregar un gasto
+formulario.addEventListener("submit", function(event) {
+
+    event.preventDefault();
+
+    const concepto = conceptoInput.value.trim();
+    const monto = Number(montoInput.value);
+
+    if (concepto === "" || montoInput.value === "" ||
+        !Number.isFinite(monto) || monto <= 0) {
+
+        error.textContent = "Ingresa un concepto y un monto válido.";
+        return;
+    }
+
+    error.textContent = "";
+
+    const gasto = {
+        id: Date.now() + Math.random(),
+        concepto: concepto,
+        monto: monto
+    };
+
+    gastos.unshift(gasto);
+
+    mostrarGastos();
+
+    formulario.reset();
+    conceptoInput.focus();
+
+});
+
+// Mostrar todos los gastos
+function mostrarGastos() {
+
+    lista.innerHTML = "";
+
+    if (gastos.length === 0) {
+
+        const mensaje = document.createElement("div");
+        mensaje.className = "empty";
+        mensaje.textContent = "🛍️ Todavía no tienes gastos registrados.";
+        lista.appendChild(mensaje);
+
+    }
+
+    gastos.forEach(function(gasto) {
+
+        const elemento = document.createElement("div");
+
+        elemento.className =
+            "gasto animate__animated animate__fadeInUp";
+
+        const informacion = document.createElement("div");
+
+        const nombre = document.createElement("div");
+        nombre.className = "concepto";
+        nombre.textContent = "🛍️ " + gasto.concepto;
+
+        const cantidad = document.createElement("div");
+        cantidad.className = "monto";
+        cantidad.textContent = formatoDinero.format(gasto.monto);
+
+        informacion.appendChild(nombre);
+        informacion.appendChild(cantidad);
+
+        const boton = document.createElement("button");
+        boton.className = "btn-delete";
+        boton.textContent = "✕";
+        boton.title = "Eliminar gasto";
+        boton.setAttribute("aria-label", "Eliminar " + gasto.concepto);
+
+        boton.addEventListener("click", function() {
+            eliminarGasto(gasto.id, elemento);
+        });
+
+        elemento.appendChild(informacion);
+        elemento.appendChild(boton);
+
+        lista.appendChild(elemento);
+
+    });
+
+    actualizarTotal();
+
+}
+
+// Eliminar un gasto
+function eliminarGasto(id, elemento) {
+
+    elemento.classList.remove("animate__fadeInUp");
+    elemento.classList.add("animate__fadeOutRight");
+
+    elemento.addEventListener("animationend", function() {
+
+        gastos = gastos.filter(function(gasto) {
+            return gasto.id !== id;
+        });
+
+        mostrarGastos();
+
+    }, { once: true });
+
+}
+
+// Actualizar el total
+function actualizarTotal() {
+
+    let suma = 0;
+
+    gastos.forEach(function(gasto) {
+        suma += gasto.monto;
+    });
+
+    total.textContent = formatoDinero.format(suma);
+
+    contador.textContent =
+        gastos.length + (gastos.length === 1 ? " gasto" : " gastos");
+
+    const tarjeta = document.getElementById("tarjeta-total");
+
+    tarjeta.classList.remove("animate__pulse");
+
+    void tarjeta.offsetWidth;
+
+    tarjeta.classList.add("animate__pulse");
+
+}
+
+</script>
+
+</body>
+</html>
